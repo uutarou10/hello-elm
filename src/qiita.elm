@@ -1,9 +1,10 @@
 module Main exposing (Model(..), Msg(..), init, main, subscriptions, update, view)
 
 import Browser
-import Html exposing (Html, pre, text)
+import Html exposing (Html, div, img, p, text)
+import Html.Attributes exposing (src)
 import Http
-import Json.Decode exposing (Decoder, field,)
+import Json.Decode exposing (Decoder, field, map2, string)
 
 
 main =
@@ -18,7 +19,7 @@ main =
 type Model
     = Fail
     | Loading
-    | Success String
+    | Success QiitaUser
 
 
 init : () -> ( Model, Cmd Msg )
@@ -26,13 +27,13 @@ init _ =
     ( Loading
     , Http.get
         { url = "https://qiita.com/api/v2/users/uutarou10"
-        , expect = Http.expectString Received
+        , expect = Http.expectJson Received qiitaUserDecode
         }
     )
 
 
 type Msg
-    = Received (Result Http.Error String)
+    = Received (Result Http.Error QiitaUser)
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -65,5 +66,21 @@ view model =
         Loading ->
             text "Loading..."
 
-        Success response ->
-            pre [] [ text response ]
+        Success qiitaUser ->
+            div []
+                [ img [ src qiitaUser.profileImageUrl ] []
+                , p [] [ text qiitaUser.id ]
+                ]
+
+
+type alias QiitaUser =
+    { id : String
+    , profileImageUrl : String
+    }
+
+
+qiitaUserDecode : Decoder QiitaUser
+qiitaUserDecode =
+    map2 QiitaUser
+        (field "id" string)
+        (field "profile_image_url" string)
